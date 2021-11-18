@@ -20,9 +20,24 @@
 </header>
 <main id="app">
     <div class="row">
-        <div class="col s12">
+        <div class="col s6">
+            <div v-for="c in contacts">
+                {{c.uuid}}
+            </div>
+        </div>
+        {{messages}}
+        <div class="col s6">
             <div class="card horizontal">
-                <div id="chat-messages" class="card-content" v-html="chatContent">
+                <div id="chat-messages" class="card-content">
+                    
+                    <div v-for="msg in messages" >
+                        <div class="chip">
+                            <img src="http://www.gravatar.com/avatar/d41d8cd98f00b204e9800998ecf8427e">
+                            {{msg.uuid}}
+                        </div>
+                        {{msg.message}}
+                        <br/>
+                    </div>
                 </div>
             </div>
         </div>

@@ -7,7 +7,9 @@ new Vue({
         chatContent: '', // A running list of chat messages displayed on the screen
         email: null, // Email address used for grabbing an avatar
         username: null, // Our username
-        joined: false // True if email and username have been filled in
+        joined: false, // True if email and username have been filled in
+        contacts:[],
+        messages:[]
     },
 
     created: function() {
@@ -15,14 +17,29 @@ new Vue({
         this.ws = new WebSocket('ws://' + window.location.host + '/ws');
         this.ws.addEventListener('message', function(e) {
             var msg = JSON.parse(e.data);
-            self.chatContent += '<div class="chip">'
-                    + '<img src="' + self.gravatarURL(msg.email) + '">' // Avatar
-                    + msg.username
-                + '</div>'
-                + emojione.toImage(msg.message) + '<br/>'; // Parse emojis
+            console.log(msg);
 
-            var element = document.getElementById('chat-messages');
-            element.scrollTop = element.scrollHeight; // Auto scroll to the bottom
+            if(msg.type == "joined"){
+                self.contacts = msg.contactsUUID;
+            }
+            else if(msg.type ==  "connectContact"){
+                self.contacts.push({uuid:msg.uuid})
+            }
+            else if (msg.type == "disconectContact"){
+                self.contacts = self.contacts.filter(c => c.uuid != msg.uuid)
+            }
+            else if (msg.type==""){
+                // self.chatContent += '<div class="chip">'
+                //     + '<img src="' + self.gravatarURL(msg.email) + '">' // Avatar
+                //     + msg.username
+                // + '</div>'
+                // + emojione.toImage(msg.message) + '<br/>'; // Parse emojis
+
+                self.messages.push(msg)
+
+                var element = document.getElementById('chat-messages');
+                element.scrollTop = element.scrollHeight; // Auto scroll to the bottom
+            }
         });
     },
 
