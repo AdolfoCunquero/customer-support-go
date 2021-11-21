@@ -50,7 +50,11 @@ new Vue({
                     JSON.stringify({
                         email: this.email,
                         username: this.username,
-                        message: $('<p>').html(this.newMsg).text() // Strip out html
+                        messageContent:{
+                            messageType:1,
+                            text: $('<p>').html(this.newMsg).text() // Strip out html
+                        }
+                        
                     }
                 ));
                 this.newMsg = ''; // Reset newMsg
