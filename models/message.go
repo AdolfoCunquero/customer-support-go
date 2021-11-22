@@ -34,7 +34,7 @@ type Conversation struct {
 type Incident struct {
 	ID             primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	AgentId        string             `json:"agentId" bson:"agentId"`
-	ConversationId string             `json:"incidentId" bson:"incidentId"`
+	ConversationId string             `json:"conversationId" bson:"conversationId"`
 	Status         int                `json:"status" bson:"status"`
 	Audit          Audit              `json:"audit" bson:"audit"`
 }

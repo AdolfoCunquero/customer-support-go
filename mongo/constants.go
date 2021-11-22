@@ -1,6 +1,8 @@
 package mongo
 
 const (
-	messageCollection = "messages"
-	database          = "customerSupportDB"
+	messageCollection      = "messages"
+	conversationCollection = "conversations"
+	incidentCollection     = "incidents"
+	database               = "customerSupportDB"
 )
