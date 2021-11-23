@@ -1,9 +1,7 @@
 package redis
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
 
 	mdls "customer-support/models"
 	mdb "customer-support/mongo"
@@ -11,9 +9,13 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
+const setIncidentClient = "incident:client:id:"
+const setIncidentAgent = "incident:agent:id:"
+const hmapIncident = "incident:id:"
+
 func GetOrCreateIncident(clientId string, agentId string) (string, error) {
-	val, err := rdb.HGet(ctx, "incidents", clientId).Result()
-	if err == redis.Nil {
+	val, err := rdb.SMembers(ctx, setIncidentClient+clientId).Result()
+	if err == redis.Nil || len(val) == 0 {
 
 		currentConv, err := GetOrCreateConversation(clientId)
 		if err != nil {
@@ -26,41 +28,60 @@ func GetOrCreateIncident(clientId string, agentId string) (string, error) {
 			return "", err
 		}
 
-		obj := map[string]interface{}{"incidentId": newInc.ID.Hex(), "status": 1}
-		args, _ := json.Marshal(obj)
-		value := map[string]interface{}{clientId: string(args)}
+		var incidentId string = newInc.ID.Hex()
 
-		err = rdb.HSet(ctx, "incidents", value).Err()
-
+		err = rdb.SAdd(ctx, setIncidentClient+clientId, incidentId).Err()
 		if err != nil {
 			return "", err
 		}
-		return newInc.ID.Hex(), nil
+
+		inc := map[string]interface{}{"clientId": clientId, "agentId": agentId}
+
+		err = rdb.HSet(ctx, hmapIncident+incidentId, inc).Err()
+		if err != nil {
+			return "", err
+		}
+
+		err = rdb.SAdd(ctx, setIncidentAgent+agentId, incidentId).Err()
+		if err != nil {
+			return "", err
+		}
+
+		return incidentId, nil
 
 	} else if err != nil {
 		return "", err
 	}
-	return val, nil
+	return val[0], nil
 }
 
 func CloseIncident(clientId string) error {
-	incStr, err := rdb.HGet(ctx, "incidents", clientId).Result()
-	if err != nil {
+	clientKey := setIncidentClient + clientId
+	clientInc, err := rdb.SMembers(ctx, clientKey).Result()
+
+	if err != nil || len(clientInc) == 0 {
 		return errors.New("incident does not exists")
 	}
 
-	count := rdb.HDel(ctx, "incidents", clientId)
+	incidentId := clientInc[0]
+	agentId := rdb.HGet(ctx, hmapIncident+incidentId, "agentId").Val()
+
+	count := rdb.Del(ctx, clientKey)
 	if count.Val() == 0 {
 		return errors.New("error to delete redis incident")
 	}
 
-	incData := make(map[string]interface{})
-	errU := json.Unmarshal([]byte(incStr), &incData)
-	if errU != nil {
-		return errU
+	count = rdb.Del(ctx, hmapIncident+incidentId)
+	if count.Val() == 0 {
+		return errors.New("error to delete redis incident")
 	}
 
-	err = mdb.CloseIncident(fmt.Sprintf("%v", incData["incidentId"]))
+	count = rdb.SRem(ctx, setIncidentAgent+agentId, incidentId)
+	if count.Val() == 0 {
+		return errors.New("error to delete redis incident")
+	}
+
+	err = mdb.CloseIncident(incidentId)
 	if err != nil {
 		return err
 	}

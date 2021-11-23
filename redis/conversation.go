@@ -2,7 +2,6 @@ package redis
 
 import (
 	"errors"
-	"fmt"
 
 	mdls "customer-support/models"
 	mdb "customer-support/mongo"
@@ -10,41 +9,61 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
+const setConversationClient = "conversation:client:id:"
+const hmapConversation = "conversation:id:"
+
 func GetOrCreateConversation(clientId string) (string, error) {
-	val, err := rdb.HGet(ctx, "conversations", clientId).Result()
-	if err == redis.Nil {
+	val, err := rdb.SMembers(ctx, setConversationClient+clientId).Result()
+	if err == redis.Nil || len(val) == 0 {
 		newConv := mdls.Conversation{ClientId: clientId, Status: 1}
 		newConv, err = mdb.SaveConversation(newConv)
 		if err != nil {
 			return "", err
 		}
 
-		value := map[string]interface{}{clientId: newConv.ID.Hex()}
+		var conversationID string = newConv.ID.Hex()
 
-		err = rdb.HSet(ctx, "conversations", value).Err()
+		err = rdb.SAdd(ctx, setConversationClient+clientId, conversationID).Err()
 		if err != nil {
 			return "", err
 		}
-		return newConv.ID.Hex(), nil
+
+		conv := map[string]interface{}{"clientId": clientId}
+
+		err = rdb.HSet(ctx, hmapConversation+conversationID, conv).Err()
+		if err != nil {
+			return "", err
+		}
+
+		return conversationID, nil
 
 	} else if err != nil {
 		return "", err
 	}
-	return val, nil
+	return val[0], nil
 }
 
 func CloseConversation(clientId string) error {
-	conversationId, err := rdb.HGet(ctx, "conversations", clientId).Result()
-	if err != nil {
+	clientKey := setConversationClient + clientId
+	clientConv, err := rdb.SMembers(ctx, clientKey).Result()
+
+	if err != nil || len(clientConv) == 0 {
 		return errors.New("conversation does not exists")
 	}
+
+	var conversationId string = clientConv[0]
 
 	errI := CloseIncident(clientId)
 	if err != nil {
 		return errI
 	}
 
-	count := rdb.HDel(ctx, "conversations", clientId)
+	count := rdb.Del(ctx, clientKey)
+	if count.Val() == 0 {
+		return errors.New("error to delete redis conversation")
+	}
+
+	count = rdb.Del(ctx, hmapConversation+conversationId)
 	if count.Val() == 0 {
 		return errors.New("error to delete redis conversation")
 	}
@@ -54,30 +73,4 @@ func CloseConversation(clientId string) error {
 		return err
 	}
 	return nil
-}
-
-func SetExample() {
-	err := rdb.Set(ctx, "key", "value", 0).Err()
-	if err != nil {
-		panic(err)
-	}
-
-	val, err := rdb.Get(ctx, "key").Result()
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("key", val)
-
-	val2, err := rdb.Get(ctx, "key2").Result()
-	if err == redis.Nil {
-		fmt.Println("key2 does not exist")
-	} else if err != nil {
-		panic(err)
-	} else {
-		fmt.Println("key2", val2)
-	}
-
-	//Output: key value
-	//key2 does not exist
-
 }
