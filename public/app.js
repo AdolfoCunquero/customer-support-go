@@ -1,4 +1,4 @@
-new Vue({
+var app = new Vue({
     el: '#app',
 
     data: {
@@ -6,7 +6,7 @@ new Vue({
         newMsg: '', // Holds new messages to be sent to the server
         chatContent: '', // A running list of chat messages displayed on the screen
         email: null, // Email address used for grabbing an avatar
-        username: null, // Our username
+        username: "61e12342d9388a555a404379", // Our username
         joined: false, // True if email and username have been filled in
         contacts:[],
         messages:[]
@@ -50,6 +50,7 @@ new Vue({
                     JSON.stringify({
                         email: this.email,
                         username: this.username,
+                        clientId:"61e12342d9388a555a404379",
                         messageContent:{
                             messageType:1,
                             text: $('<p>').html(this.newMsg).text() // Strip out html

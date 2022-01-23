@@ -22,7 +22,7 @@ func GetOrCreateIncident(clientId string, agentId string) (string, error) {
 			return "", err
 		}
 
-		newInc := mdls.Incident{ConversationId: currentConv, AgentId: agentId, Status: 1}
+		newInc := mdls.Incident{ConversationId: currentConv, AgentId: agentId, Status: 1, CustomerId: clientId}
 		newInc, err = mdb.SaveIncident(newInc)
 		if err != nil {
 			return "", err

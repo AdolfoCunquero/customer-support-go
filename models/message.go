@@ -7,9 +7,9 @@ import (
 )
 
 type JoinedResponse struct {
-	Type     string    `json:"type"`
-	FromUUID string    `json:"fromUUID"`
-	Contacts []Contact `json:"contactsUUID"`
+	Type string `json:"type"`
+	UUID string `json:"UUID"`
+	//Contacts []Contact `json:"contactsUUID"`
 }
 
 type Contact struct {
@@ -22,21 +22,6 @@ type Audit struct {
 	UserIdModified string    `json:"userIdModified" bson:"userIdModified"`
 	Created        time.Time `json:"created" bson:"created"`
 	Modified       time.Time `json:"modified" bson:"modified"`
-}
-
-type Conversation struct {
-	ID       primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	ClientId string             `json:"clientId" bson:"clientId"`
-	Status   int                `json:"status" bson:"status"`
-	Audit    Audit              `json:"audit" bson:"audit"`
-}
-
-type Incident struct {
-	ID             primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	AgentId        string             `json:"agentId" bson:"agentId"`
-	ConversationId string             `json:"conversationId" bson:"conversationId"`
-	Status         int                `json:"status" bson:"status"`
-	Audit          Audit              `json:"audit" bson:"audit"`
 }
 
 type Message struct {

@@ -2,17 +2,28 @@ package websocket
 
 import (
 	mdls "customer-support/models"
-	mng "customer-support/mongo"
+	mdb "customer-support/mongo"
+	rdb "customer-support/redis"
 	"log"
 	"time"
 )
 
-func SaveMessage(msg mdls.Message) error {
+func SaveMessage(msg mdls.Message) (mdls.Message, error) {
 	msg.DateTime = time.Now()
-	err := mng.SaveMessage(msg)
+
+	incidentId, errI := rdb.GetOrCreateIncident(msg.ClientId, "acunqueroc")
+
+	if errI != nil {
+		log.Println(errI.Error())
+	}
+
+	msg.IncidentId = incidentId
+	msg.AgentId = "acunqueroc"
+
+	result, err := mdb.SaveMessage(msg)
 	if err != nil {
 		log.Println(err.Error())
-		return err
+		return result, err
 	}
-	return nil
+	return result, nil
 }

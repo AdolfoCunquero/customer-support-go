@@ -1,0 +1,13 @@
+db.incidents.aggregate([
+    { $match:{ status:1, agentId:"acunqueroc" }},
+    { $addFields: { "customerIdF": { "$toObjectId": "$customerId" }}},
+    {
+        $lookup:{
+                from:"customers",
+                localField:"customerIdF",
+                foreignField: "_id",     
+                as:"customerInfo"
+            }
+    },
+    { $project:{_id:1, agentId:1, conversationId:1, customerId:1, status:1, customerInfo:1}},
+    ])

@@ -12,10 +12,10 @@ import (
 const setConversationClient = "conversation:client:id:"
 const hmapConversation = "conversation:id:"
 
-func GetOrCreateConversation(clientId string) (string, error) {
-	val, err := rdb.SMembers(ctx, setConversationClient+clientId).Result()
+func GetOrCreateConversation(customerId string) (string, error) {
+	val, err := rdb.SMembers(ctx, setConversationClient+customerId).Result()
 	if err == redis.Nil || len(val) == 0 {
-		newConv := mdls.Conversation{ClientId: clientId, Status: 1}
+		newConv := mdls.Conversation{CustomerId: customerId, Status: 1}
 		newConv, err = mdb.SaveConversation(newConv)
 		if err != nil {
 			return "", err
@@ -23,12 +23,12 @@ func GetOrCreateConversation(clientId string) (string, error) {
 
 		var conversationID string = newConv.ID.Hex()
 
-		err = rdb.SAdd(ctx, setConversationClient+clientId, conversationID).Err()
+		err = rdb.SAdd(ctx, setConversationClient+customerId, conversationID).Err()
 		if err != nil {
 			return "", err
 		}
 
-		conv := map[string]interface{}{"clientId": clientId}
+		conv := map[string]interface{}{"customerId": customerId}
 
 		err = rdb.HSet(ctx, hmapConversation+conversationID, conv).Err()
 		if err != nil {
@@ -43,8 +43,8 @@ func GetOrCreateConversation(clientId string) (string, error) {
 	return val[0], nil
 }
 
-func CloseConversation(clientId string) error {
-	clientKey := setConversationClient + clientId
+func CloseConversation(customerId string) error {
+	clientKey := setConversationClient + customerId
 	clientConv, err := rdb.SMembers(ctx, clientKey).Result()
 
 	if err != nil || len(clientConv) == 0 {
@@ -53,7 +53,7 @@ func CloseConversation(clientId string) error {
 
 	var conversationId string = clientConv[0]
 
-	errI := CloseIncident(clientId)
+	errI := CloseIncident(customerId)
 	if err != nil {
 		return errI
 	}
